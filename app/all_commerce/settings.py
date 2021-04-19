@@ -83,12 +83,12 @@ WSGI_APPLICATION = 'all_commerce.wsgi.application'
 
 DATABASES = {
     'default': {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.environ.get("DB_NAME", "all_commerce_db"),
-        "USER": os.environ.get("DB_USER", "amir"),
-        "PASSWORD": os.environ.get("DB_USER", "amir6670"),
-        "HOST": os.environ.get("DB_HOST", "127.0.0.1"),
-        "PORT": os.environ.get("PORT", 5432),
+        "ENGINE":   "django.db.backends.postgresql",
+        "NAME":     os.environ.get("DB_NAME",     "all_commerce_db"),
+        "USER":     os.environ.get("DB_USER",     "amir"),
+        "PASSWORD": os.environ.get("DB_PASS",     "amir6670"),
+        "HOST":     os.environ.get("DB_HOST",     "127.0.0.1"),
+        "PORT":     os.environ.get("PORT",        5432),
         "TEST": {
             "NAME": "test_all_commerce_db"
         }
@@ -142,4 +142,4 @@ MEDIA_URL = '/static/media/'
 STATIC_ROOT = '/vol/web/static'
 MEDIA_ROOT = '/vol/web/media'
 
-AUTH_USER_MODEL="core.User"
+AUTH_USER_MODEL = "core.User"
