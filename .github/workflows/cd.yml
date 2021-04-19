@@ -15,7 +15,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
       - name: Test
-        run: python3 app/manage.py test
+        run: docker-compose run --rm app sh -c "python3 manage.py test"
 
   deploy-staging:
     name: Deploy on Staging
