@@ -1,0 +1,40 @@
+name: Deployment
+
+on:
+  push:
+    branches:
+      - main
+      - production
+  pull_request: []
+
+jobs:
+  test:
+    name: Test
+    runs_on: ubuntu-20.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Test
+        run: python3 manage.py test
+
+  deploy-staging:
+    name: Deploy on Staging
+    runs_on: ubuntu-20.04
+    needs: ["test"]
+    if: github.ref == "refs/heads/main"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Deploy to staging
+        run: echo "Deploy to staging code here"
+    
+  deploy-prod:
+    name: Deploy on Production
+    runs_on: ubuntu-20.04
+    needs: ["test"]
+    if: github.ref == "refs/heads/production"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Deploy to production
+        run: echo "Deploy to production code here"
