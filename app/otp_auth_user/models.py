@@ -41,9 +41,6 @@ class UserManager(BaseUserManager):
                                 full_name=phone,
                                 password=password)
 
-        print(password)
-        print(user.password)
-
         user.is_staff = True
         user.is_superuser = True
         user.save(using=self._db)
@@ -58,6 +55,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     verification_code = models.CharField(default="",
                                          max_length=5)
 
+    is_verified = models.BooleanField(default=False)
     is_staff = models.BooleanField(default=False)
 
     objects = UserManager()

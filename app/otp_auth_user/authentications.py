@@ -8,7 +8,6 @@ from .models import Token
 class JWTAuthentication(authentication.BaseAuthentication):
 
     def authenticate(self, request):
-
         access_token = request.META.get("HTTP_AUTHORIZATION")
 
         if not access_token:
@@ -23,6 +22,7 @@ class JWTAuthentication(authentication.BaseAuthentication):
             raise exceptions.AuthenticationFailed("No such user")
 
         user = token.user
+        user.save()
+
         token = token.access
         return (user, token)
-

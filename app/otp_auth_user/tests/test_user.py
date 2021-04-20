@@ -116,6 +116,7 @@ class PublicUserApiTests(TestCase):
 
 
 PROFILE_URL = reverse("user:profile")
+VERIFY_PHONE_NUMBER = reverse("user:verify-phone-number")
 
 
 class PrivateUserApiTests(TestCase):
@@ -146,18 +147,40 @@ class PrivateUserApiTests(TestCase):
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertNotEqual(current_name, res.data["full_name"])
 
-    def test_user_update_phone_number(self):
+    def test_user_update_same_phone_number(self):
+        """ 
+        Test if user updated phone number 
+        but with the same value, the nothing happens/is_verified=True
+        """
+        self.user.is_verified = True
+        payload = {"phone": self.user.phone}
+
+        res = self.client.patch(PROFILE_URL, payload)
+
+        self.user.refresh_from_db() 
+        self.assertTrue(self.user.is_verified)
+
+    def test_user_update_and_verify_new_phone_number(self):
         """ Test user needs to verify the new phone number 
             if the phone number is different than current one
          """
         payload = {"phone": "+989123456781"}
 
         res = self.client.patch(PROFILE_URL, payload)
-        print(res.data)
+
         self.user.refresh_from_db()
-        print(self.user)
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertIn("phone", res.data)
         self.assertEqual(res.data["phone"], payload["phone"])
         self.assertFalse(self.user.is_verified)
+
+        payload = {
+            "verification_code": self.user.verification_code
+        }
+
+        res = self.client.post(VERIFY_PHONE_NUMBER, payload)
+        self.user.refresh_from_db()
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertTrue(self.user.is_verified)

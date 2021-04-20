@@ -1,7 +1,7 @@
 from os import stat
 from rest_framework.response import Response
 from rest_framework.generics import CreateAPIView, RetrieveUpdateDestroyAPIView
-from rest_framework.permissions import IsAuthenticatedOrReadOnly
+from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
 from rest_framework import status
@@ -9,7 +9,7 @@ from rest_framework import status
 from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
 
-from .serializers import SigninUserSerializer, UserSerializer
+from .serializers import SigninUserSerializer, UserSerializer, RequestVCodeSerializer, VerifyNewPhoneNumberSerializer
 from .models import Token, User, generate_verification_code
 from .authentications import JWTAuthentication
 
@@ -35,11 +35,12 @@ class SignupUserView(CreateAPIView):
         print(user.verification_code)
 
 
-class RequestVCodeView(APIView):
+class RequestVCodeView(CreateAPIView):
     """ Generates an verification code, saves it in users model
         and sends it through sms """
+    serializer_class = RequestVCodeSerializer
 
-    def post(self, request):
+    def create(self, request):
         """ Check if user is exists then send a verification code """
         phone = request.data["phone"]
         user = get_object_or_404(get_user_model(), phone=phone)
@@ -65,6 +66,7 @@ class SigninUserView(CreateAPIView):
         Token.objects.create(user=user, **token)
 
         user.verification_code = ""
+        user.is_verified = True
         user.save()
         data = {
             "token": token
@@ -80,3 +82,41 @@ class UserProfileView(RetrieveUpdateDestroyAPIView):
 
     def get_object(self):
         return self.request.user
+
+    def partial_update(self, request, *args, **kwargs):
+        user = request.user
+        data = request.data
+        if "phone" in data:
+            if data["phone"] != user.phone:
+                user.is_verified = False
+                user.verification_code = generate_verification_code()
+                user.save()
+                print(user.verification_code)
+            else:
+                pass
+        return super().partial_update(request, *args, **kwargs)
+
+
+class VerifyNewPhoneNumber(CreateAPIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+    serializer_class = VerifyNewPhoneNumberSerializer
+    # 63498
+
+    def create(self, request):
+        """ 
+        Verifies the phone number that user provided
+        by send a verification code through sms
+        """
+        user = request.user
+        data = request.data
+        if not data["verification_code"]:
+            return Response({"msg": "Verification code is not provided."}, status=status.HTTP_400_BAD_REQUEST)
+
+        if user.verification_code == data["verification_code"]:
+            user.verification_code = ""
+            user.is_verified = True
+            user.save()
+            return Response({"Phone number is verified."})
+
+        return Response({"msg": "Verification code is wrong."}, status=status.HTTP_400_BAD_REQUEST)
