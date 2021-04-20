@@ -9,7 +9,7 @@ from rest_framework import status
 from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
 
-from .serializers import RequestVCodeSerializer, SigninUserSerializer, UserSerializer
+from .serializers import RequestVCodeSerializer, SigninUserSerializer, SignupUserSerialzer, UserSerializer
 from .models import Token, User, generate_verification_code
 from .authentications import JWTAuthentication
 
@@ -27,13 +27,13 @@ def get_tokens_for_user(user):
 
 class SignupUserView(CreateAPIView):
     """ Signup/create a new user in system """
-    serializer_class = UserSerializer
-
+    serializer_class = SignupUserSerialzer
 
     def perform_create(self, serializer):
         """ sends a verification code after user created """
         user = serializer.save()
         print(user.verification_code)
+
 
 class RequestVCodeView(APIView):
     """ Generates an verification code, saves it in users model
@@ -75,18 +75,8 @@ class SigninUserView(CreateAPIView):
 class UserProfileView(RetrieveUpdateDestroyAPIView):
     """ Retrieve authenticated user profile"""
     authentication_classes = [JWTAuthentication]
-    permission_classes= [IsAuthenticatedOrReadOnly]
+    permission_classes = [IsAuthenticatedOrReadOnly]
     serializer_class = UserSerializer
-    queryset = User.objects.all()
 
-    def get_queryset(self):
-        return super().get_queryset().filter(phone=self.request.user.phone)
-    
-
-    def retrieve(self, request, *args, **kwargs):
-        serializer = self.get_serializer(self.request.user)
-
-        if serializer.is_valid:
-            return Response(serializer.data)
-        
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    def get_object(self):
+        return self.request.user

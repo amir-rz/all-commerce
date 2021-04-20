@@ -1,3 +1,4 @@
+from random import sample
 from django.core.exceptions import ValidationError
 from django.test import TestCase, client
 from django.contrib.auth import get_user_model
@@ -114,6 +115,9 @@ class PublicUserApiTests(TestCase):
         self.assertNotEqual(len(token.access), 0)
 
 
+PROFILE_URL = reverse("user:profile")
+
+
 class PrivateUserApiTests(TestCase):
 
     def setUp(self) -> None:
@@ -121,4 +125,20 @@ class PrivateUserApiTests(TestCase):
         self.user = sample_user()
         self.client.force_authenticate(user=self.user)
 
-    
+    def test_user_retrieve_own_profile(self):
+        res = self.client.get(PROFILE_URL)
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertIn(res.data, "phone")
+
+    def test_user_update_own_profile(self):
+        """ Test user is able to update/put hes own profile """
+        current_name = self.user.name
+        new_name = "newname"
+        payload = {
+            "full_name" : new_name
+        }
+
+        res = self.client.put(PROFILE_URL, payload)
+        self.user.refresh_from_db()
+        self.assertNotEqual(current_name,res.full_name)

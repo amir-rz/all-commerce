@@ -9,9 +9,7 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = get_user_model()
         fields = ["id", "phone", "full_name"]
-        extra_kwargs = {
-            "id": {"read_only": True}
-        }
+        read_only_fields = ["id", "phone"]
 
     def create(self, validated_data):
         """ Create and return a new user """
@@ -31,6 +29,11 @@ class UserSerializer(serializers.ModelSerializer):
             user.save()
 
         return user
+
+class SignupUserSerialzer(serializers.ModelSerializer):
+    class Meta:
+        model = get_user_model()
+        fields = ["phone", "full_name"]
 
 
 class RequestVCodeSerializer(serializers.Serializer):
