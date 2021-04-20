@@ -1,29 +1,27 @@
 from django.core.exceptions import ValidationError
-from django.test import TestCase
+from django.test import TestCase, client
 from django.contrib.auth import get_user_model
+from django.urls import reverse
 
-from ..models import User
+from rest_framework.test import APIClient
+from rest_framework import status
 
 
-def sample_user(phone="+989123456789", full_name="testname", password="userpass"):
+def sample_user(phone="+989123456789", full_name="testname"):
     """ Create a sample user """
     return get_user_model().objects.create_user(phone=phone,
-                                                full_name=full_name,
-                                                password=password)
+                                                full_name=full_name)
 
 
-class ModelTests(TestCase):
-
+class UserModelTests(TestCase):
     def test_create_user_successful(self):
         """ Test create a user successfuly """
         phone = "+989123456789"
         full_name = "testname"
-        password = "testpass"
-        user = sample_user(phone, full_name, password)
+        user = sample_user(phone, full_name,)
 
-        self.assertTrue(bool(user.password))
+        self.assertTrue(bool(user.verification_code))
         self.assertEqual(user.phone, phone)
-        self.assertTrue(user.check_password(password))
 
     def test_create_user_invalid_phone_number(self):
         """ Test creating a user with an invalid phone number """
@@ -42,21 +40,6 @@ class ModelTests(TestCase):
 
         self.assertEqual(len(str(user.verification_code)), 5)
         self.assertTrue(bool(user.verification_code))
-
-    def test_user_verification_code_cannot_accept_str(self):
-        """ Test user verification_code field cannot be string """
-        user = sample_user()
-        with self.assertRaises(ValidationError):
-            user.verification_code = "string"
-            user.save()
-
-    def test_user_invalid_number_verification_code(self):
-        """ Test invalid verification code """
-
-        with self.assertRaises(ValidationError):
-            user = sample_user()
-            user.verification_code = 123
-            user.save()
 
     def test_create_superuser_successful(self):
         """ Test create a superuser successfuly """

@@ -35,6 +35,7 @@ if ALLOWED_HOSTS_ENV:
 
 INSTALLED_APPS = [
     "core",
+    "otp_auth_user",
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -142,4 +143,4 @@ MEDIA_URL = '/static/media/'
 STATIC_ROOT = '/vol/web/static'
 MEDIA_ROOT = '/vol/web/media'
 
-AUTH_USER_MODEL = "core.User"
+AUTH_USER_MODEL = "otp_auth_user.User"

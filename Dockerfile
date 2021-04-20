@@ -9,9 +9,10 @@ ENV DOCKER_BUILDKIT=1
 ENV PATH="/scripts:${PATH}"
 
 RUN apk  \
+    --repositories-file http://repo.iut.ac.ir/repo/alpine/v3.13/main/ \
     -X http://repo.iut.ac.ir/repo/alpine/v3.13/main/ \
     -X http://repo.iut.ac.ir/repo/alpine/v3.13/community/  \
-    add  postgresql-client jpeg-dev gcc libc-dev \
+    add postgresql-client jpeg-dev gcc libc-dev \
     linux-headers postgresql-dev musl-dev zlib zlib-dev
 
 COPY ./requirements.txt /requirements.txt
