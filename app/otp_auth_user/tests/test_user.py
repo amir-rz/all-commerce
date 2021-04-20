@@ -129,16 +129,35 @@ class PrivateUserApiTests(TestCase):
         res = self.client.get(PROFILE_URL)
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
-        self.assertIn(res.data, "phone")
+        self.assertIn("phone", res.data)
 
     def test_user_update_own_profile(self):
         """ Test user is able to update/put hes own profile """
-        current_name = self.user.name
+        current_name = self.user.full_name
         new_name = "newname"
         payload = {
-            "full_name" : new_name
+            "phone": self.user.phone,
+            "full_name": new_name
         }
 
         res = self.client.put(PROFILE_URL, payload)
         self.user.refresh_from_db()
-        self.assertNotEqual(current_name,res.full_name)
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertNotEqual(current_name, res.data["full_name"])
+
+    def test_user_update_phone_number(self):
+        """ Test user needs to verify the new phone number 
+            if the phone number is different than current one
+         """
+        payload = {"phone": "+989123456781"}
+
+        res = self.client.patch(PROFILE_URL, payload)
+        print(res.data)
+        self.user.refresh_from_db()
+        print(self.user)
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertIn("phone", res.data)
+        self.assertEqual(res.data["phone"], payload["phone"])
+        self.assertFalse(self.user.is_verified)

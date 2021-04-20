@@ -26,6 +26,3 @@ class JWTAuthentication(authentication.BaseAuthentication):
         token = token.access
         return (user, token)
 
-    # def authenticate_header(self, request):
-    #     print(request)
-    #     return super().authenticate_header(request)

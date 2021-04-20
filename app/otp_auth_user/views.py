@@ -9,7 +9,7 @@ from rest_framework import status
 from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
 
-from .serializers import RequestVCodeSerializer, SigninUserSerializer, SignupUserSerialzer, UserSerializer
+from .serializers import SigninUserSerializer, UserSerializer
 from .models import Token, User, generate_verification_code
 from .authentications import JWTAuthentication
 
@@ -27,7 +27,7 @@ def get_tokens_for_user(user):
 
 class SignupUserView(CreateAPIView):
     """ Signup/create a new user in system """
-    serializer_class = SignupUserSerialzer
+    serializer_class = UserSerializer
 
     def perform_create(self, serializer):
         """ sends a verification code after user created """
