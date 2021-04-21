@@ -3,21 +3,14 @@ from rest_framework import serializers
 from django.contrib.auth import get_user_model
 
 from phonenumber_field.serializerfields import PhoneNumberField
-from .models import Token
-
-
-class TokenSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Token
-        fields = "__all__"
 
 
 class UserSerializer(serializers.ModelSerializer):
-    token_set = TokenSerializer(many=True, read_only=True)
+
 
     class Meta:
         model = get_user_model()
-        fields = ["id", "phone", "full_name", "is_verified", "token_set"]
+        fields = ["id", "phone", "full_name", "is_verified"]
         read_only_fields = ["id", "is_verified"]
 
     def create(self, validated_data):

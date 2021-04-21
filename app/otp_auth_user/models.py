@@ -1,10 +1,12 @@
-from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
-from django.core.exceptions import ValidationError
+from typing import Any
+from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin, AnonymousUser
+
 from django.db import models
-from django.core.validators import MinLengthValidator, MinValueValidator, MaxValueValidator
 
 from phonenumber_field.modelfields import PhoneNumberField
 from phonenumber_field.validators import validate_international_phonenumber
+
+from rest_framework_simplejwt.tokens import RefreshToken
 
 from random import randint
 
@@ -12,6 +14,15 @@ from random import randint
 def generate_verification_code():
     """ Generates a 5 digit integer, verification code """
     return randint(10000, 99999)
+
+
+def get_tokens_for_user(user):
+    refresh = RefreshToken.for_user(user)
+
+    return {
+        'refresh': str(refresh),
+        'access': str(refresh.access_token),
+    }
 
 
 class UserManager(BaseUserManager):
@@ -64,12 +75,3 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self):
         return self.full_name
-
-
-class Token(models.Model):
-    user = models.ForeignKey("User", on_delete=models.CASCADE)
-    access = models.CharField(max_length=255, unique=True)
-    refresh = models.CharField(max_length=255, unique=True)
-
-    def __str__(self):
-        return self.user.full_name

@@ -6,3 +6,4 @@ django-phonenumber-field==5.1.0
 django-phonenumber-field[phonenumbers]
 djangorestframework-simplejwt==4.6.0
 uWSGI==2.0.19.1
+drf-jwt==1.19.0

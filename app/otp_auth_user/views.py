@@ -2,7 +2,6 @@ from os import stat
 from rest_framework.response import Response
 from rest_framework.generics import CreateAPIView, RetrieveUpdateDestroyAPIView
 from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
-from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
 from rest_framework import status
 
@@ -10,19 +9,10 @@ from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
 
 from .serializers import SigninUserSerializer, UserSerializer, RequestVCodeSerializer, VerifyNewPhoneNumberSerializer
-from .models import Token, User, generate_verification_code
-from .authentications import JWTAuthentication
+from .models import generate_verification_code, get_tokens_for_user
 
-from rest_framework_simplejwt.tokens import RefreshToken
-
-
-def get_tokens_for_user(user):
-    refresh = RefreshToken.for_user(user)
-
-    return {
-        'refresh': str(refresh),
-        'access': str(refresh.access_token),
-    }
+from rest_framework_simplejwt.authentication import JWTAuthentication
+from rest_framework_simplejwt.serializers import TokenObtainSerializer
 
 
 class SignupUserView(CreateAPIView):
@@ -51,19 +41,19 @@ class RequestVCodeView(CreateAPIView):
         return Response({"msg": "verification code is sent."})
 
 
-class SigninUserView(CreateAPIView):
+class ObtainToken(CreateAPIView):
+    """ Obtain a new jwt token for user """
     serializer_class = SigninUserSerializer
 
     def create(self, request):
         phone = request.data["phone"]
         vcode = request.data["verification_code"]
+
         user = get_object_or_404(get_user_model(),
                                  phone=phone,
                                  verification_code=vcode)
 
         token = get_tokens_for_user(user)
-
-        Token.objects.create(user=user, **token)
 
         user.verification_code = ""
         user.is_verified = True
@@ -97,7 +87,11 @@ class UserProfileView(RetrieveUpdateDestroyAPIView):
         return super().partial_update(request, *args, **kwargs)
 
 
-class VerifyNewPhoneNumber(CreateAPIView):
+class VerifyNewPhoneNumberView(CreateAPIView):
+    """ 
+    Users must verify new phone number when they change their current phone
+    number
+    """
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
     serializer_class = VerifyNewPhoneNumberSerializer

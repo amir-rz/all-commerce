@@ -8,18 +8,19 @@ from django.shortcuts import get_object_or_404
 from rest_framework.test import APIClient
 from rest_framework import status
 
-from ..models import Token
+
+REQUEST_VCODE_URL = reverse("user:request-vcode")
+SIGNUP_URL = reverse("user:signup")
+TOKEN_URL = reverse("user:obtain-token")
+TOKEN_REFRESH_URL = reverse("user:token-refresh")
+PROFILE_URL = reverse("user:profile")
+VERIFY_PHONE_NUMBER = reverse("user:verify-phone-number")
 
 
 def sample_user(phone="+989123456789", full_name="testname"):
     """ Create a sample user """
     return get_user_model().objects.create_user(phone=phone,
                                                 full_name=full_name)
-
-
-REQUEST_VCODE_URL = reverse("user:request-vcode")
-SIGNIN_URL = reverse("user:signin")
-SIGNUP_URL = reverse("user:signup")
 
 
 class PublicUserApiTests(TestCase):
@@ -64,7 +65,7 @@ class PublicUserApiTests(TestCase):
             "verification_code": user.verification_code
         }
 
-        res = self.client.post(SIGNIN_URL, payload)
+        res = self.client.post(TOKEN_URL, payload)
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertIn("token", res.data)
@@ -78,7 +79,7 @@ class PublicUserApiTests(TestCase):
             "verification_code": int(user.verification_code) + 1
         }
 
-        res = self.client.post(SIGNIN_URL, payload)
+        res = self.client.post(TOKEN_URL, payload)
 
         self.assertEqual(res.status_code, status.HTTP_404_NOT_FOUND)
         self.assertNotIn("token", res.data)
@@ -92,31 +93,11 @@ class PublicUserApiTests(TestCase):
             "phone": user.phone,
             "verification_code": user.verification_code
         }
-        res = self.client.post(SIGNIN_URL, payload)
+        res = self.client.post(TOKEN_URL, payload)
         user.refresh_from_db()
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(user.verification_code, "")
-
-    def test_token_is_saved_in_system(self):
-        """ Test token is saved in db after user signed in """
-        user = sample_user()
-
-        payload = {
-            "phone": user.phone,
-            "verification_code": user.verification_code
-        }
-
-        res = self.client.post(SIGNIN_URL, payload)
-        self.assertEqual(res.status_code, status.HTTP_200_OK)
-
-        token = Token.objects.get(user=user)
-
-        self.assertNotEqual(len(token.access), 0)
-
-
-PROFILE_URL = reverse("user:profile")
-VERIFY_PHONE_NUMBER = reverse("user:verify-phone-number")
 
 
 class PrivateUserApiTests(TestCase):
@@ -157,7 +138,7 @@ class PrivateUserApiTests(TestCase):
 
         res = self.client.patch(PROFILE_URL, payload)
 
-        self.user.refresh_from_db() 
+        self.user.refresh_from_db()
         self.assertTrue(self.user.is_verified)
 
     def test_user_update_and_verify_new_phone_number(self):
@@ -184,3 +165,19 @@ class PrivateUserApiTests(TestCase):
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertTrue(self.user.is_verified)
+
+    def test_refresh_token(self):
+        """ Test recieve a new access and refresh for current refresh token  """
+        payload = {
+            "phone": self.user.phone,
+            "verification_code": self.user.verification_code
+        }
+        res = self.client.post(TOKEN_URL, payload)
+
+        payload = {
+            "refresh": res.data["token"]["refresh"]
+        }
+        res = self.client.post(TOKEN_REFRESH_URL, payload)
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertIn("access", res.data)
