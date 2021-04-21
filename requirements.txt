@@ -1,11 +1,11 @@
 Django==3.2
 djangorestframework==3.12.4
-Pillow==8.2.0
 psycopg2==2.8.6
 django-phonenumber-field==5.1.0
 django-phonenumber-field[phonenumbers]
 djangorestframework-simplejwt==4.6.0
 pyotp==2.6.0
+django-autoslug==1.9.8
 
 
 uWSGI==2.0.19.1

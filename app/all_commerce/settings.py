@@ -35,6 +35,8 @@ if ALLOWED_HOSTS_ENV:
 # Application definition
 
 INSTALLED_APPS = [
+    "store",
+    "product",
     "core",
     "otp_auth_user",
     'django.contrib.admin',
@@ -150,10 +152,9 @@ AUTH_USER_MODEL = "otp_auth_user.User"
 
 # drf JWT settings
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(days=5),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
-    'ROTATE_REFRESH_TOKENS': False,
+    'ACCESS_TOKEN_LIFETIME': timedelta(days=99),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=99),
+    'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': True,
     'UPDATE_LAST_LOGIN': False,
-
 }

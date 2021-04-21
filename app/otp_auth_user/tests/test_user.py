@@ -1,12 +1,11 @@
-from random import sample
-from django.core.exceptions import ValidationError
-from django.test import TestCase, client
+from django.test import TestCase
 from django.contrib.auth import get_user_model
 from django.urls import reverse
-from django.shortcuts import get_object_or_404
 
 from rest_framework.test import APIClient
 from rest_framework import status
+
+from ..models import generate_totp_for_user
 
 import pyotp
 
@@ -59,12 +58,22 @@ class PublicUserApiTests(TestCase):
         res = self.client.post(REQUEST_VCODE_URL, payload)
         self.assertEqual(res.status_code, status.HTTP_200_OK)
 
+    def test_request_vcode_for_non_existing_user(self):
+        """ Test request vcode for non existing user """
+        payload = {
+            "phone": "+98123456780"
+        }
+        res = self.client.post(REQUEST_VCODE_URL, payload)
+        self.assertEqual(res.status_code, status.HTTP_404_NOT_FOUND)
+
     def test_signin_a_user(self):
         """ Test signin a user with recived verification code through sms """
         user = sample_user()
+        vcode = generate_totp_for_user(user).now()
+
         payload = {
             "phone": user.phone,
-            "verification_code": user.verification_code
+            "verification_code": vcode
         }
 
         res = self.client.post(TOKEN_URL, payload)
@@ -75,33 +84,18 @@ class PublicUserApiTests(TestCase):
     def test_signin_user_invalid_vcode(self):
         """ Test sign in a user with invalid verifciation code """
         user = sample_user()
+        vcode = generate_totp_for_user(user).now()
 
         payload = {
             "phone": user.phone,
-            "verification_code": int(user.verification_code) + 1
+            "verification_code": int(vcode) + 1
         }
 
         res = self.client.post(TOKEN_URL, payload)
 
-        self.assertEqual(res.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertNotIn("token", res.data)
 
-    def test_vcode_is_null_after_signin(self):
-        """ Test that verification code is null after user 
-        signed in successfuly """
-        user = sample_user()
-
-        payload = {
-            "phone": user.phone,
-            "verification_code": user.verification_code
-        }
-        res = self.client.post(TOKEN_URL, payload)
-        user.refresh_from_db()
-
-        self.assertEqual(res.status_code, status.HTTP_200_OK)
-        self.assertEqual(user.verification_code, "")
-
-        
 
 class PrivateUserApiTests(TestCase):
 
@@ -158,9 +152,10 @@ class PrivateUserApiTests(TestCase):
         self.assertIn("phone", res.data)
         self.assertEqual(res.data["phone"], payload["phone"])
         self.assertFalse(self.user.is_verified)
-
+        
+        vcode = generate_totp_for_user(self.user).now()
         payload = {
-            "verification_code": self.user.verification_code
+            "verification_code": vcode
         }
 
         res = self.client.post(VERIFY_PHONE_NUMBER, payload)
@@ -171,12 +166,13 @@ class PrivateUserApiTests(TestCase):
 
     def test_refresh_token(self):
         """ Test recieve a new access and refresh for current refresh token  """
+        vcode = generate_totp_for_user(self.user).now()
+     
         payload = {
             "phone": self.user.phone,
-            "verification_code": self.user.verification_code
+            "verification_code": vcode
         }
         res = self.client.post(TOKEN_URL, payload)
-
         payload = {
             "refresh": res.data["token"]["refresh"]
         }
@@ -184,4 +180,6 @@ class PrivateUserApiTests(TestCase):
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertIn("access", res.data)
+        self.assertIn("refresh", res.data)
+
 

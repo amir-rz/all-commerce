@@ -17,9 +17,8 @@ RUN apk  \
 
 COPY ./requirements.txt /requirements.txt
 
-RUN --mount=type=cache,target=/root/.cache \
-    pip install -r /requirements.txt
-
+RUN --mount=type=cache,id=custom-pip,target=/root/.cache/pip pip cache list
+RUN --mount=type=cache,id=custom-pip,target=/root/.cache/pip pip install -r /requirements.txt
 
 RUN mkdir /app
 COPY ./app /app
