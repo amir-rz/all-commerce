@@ -9,10 +9,13 @@ from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
 
 from .serializers import SigninUserSerializer, UserSerializer, RequestVCodeSerializer, VerifyNewPhoneNumberSerializer
-from .models import generate_verification_code, get_tokens_for_user
+from .models import User, get_tokens_for_user
 
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.serializers import TokenObtainSerializer
+
+import pyotp
+import time
 
 
 class SignupUserView(CreateAPIView):
@@ -22,7 +25,6 @@ class SignupUserView(CreateAPIView):
     def perform_create(self, serializer):
         """ sends a verification code after user created """
         user = serializer.save()
-        print(user.verification_code)
 
 
 class RequestVCodeView(CreateAPIView):
@@ -34,8 +36,9 @@ class RequestVCodeView(CreateAPIView):
         """ Check if user is exists then send a verification code """
         phone = request.data["phone"]
         user = get_object_or_404(get_user_model(), phone=phone)
-        user.verification_code = generate_verification_code()
-        print(user.verification_code)
+
+        otp_vcode = pyotp.TOTP(user.key, 5, interval=600)
+        print(f"{user.phone}: {otp_vcode.now()}")
         user.save()
 
         return Response({"msg": "verification code is sent."})
@@ -49,19 +52,22 @@ class ObtainToken(CreateAPIView):
         phone = request.data["phone"]
         vcode = request.data["verification_code"]
 
-        user = get_object_or_404(get_user_model(),
-                                 phone=phone,
-                                 verification_code=vcode)
+        user = get_object_or_404(User, phone=phone)
 
-        token = get_tokens_for_user(user)
+        totp = pyotp.TOTP(user.key, 5, interval=30,)
 
-        user.verification_code = ""
-        user.is_verified = True
-        user.save()
-        data = {
-            "token": token
-        }
-        return Response(data)
+        if totp.verify(vcode):
+            token = get_tokens_for_user(user)
+
+            user.verification_code = ""
+            user.is_verified = True
+            user.save()
+            data = {
+                "token": token
+            }
+            return Response(data)
+
+        return Response({"msg": "Verification is invalid or expired."}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class UserProfileView(RetrieveUpdateDestroyAPIView):
@@ -79,7 +85,6 @@ class UserProfileView(RetrieveUpdateDestroyAPIView):
         if "phone" in data:
             if data["phone"] != user.phone:
                 user.is_verified = False
-                user.verification_code = generate_verification_code()
                 user.save()
                 print(user.verification_code)
             else:

@@ -8,6 +8,8 @@ from django.shortcuts import get_object_or_404
 from rest_framework.test import APIClient
 from rest_framework import status
 
+import pyotp
+
 
 REQUEST_VCODE_URL = reverse("user:request-vcode")
 SIGNUP_URL = reverse("user:signup")
@@ -99,6 +101,7 @@ class PublicUserApiTests(TestCase):
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(user.verification_code, "")
 
+        
 
 class PrivateUserApiTests(TestCase):
 
@@ -181,3 +184,4 @@ class PrivateUserApiTests(TestCase):
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertIn("access", res.data)
+

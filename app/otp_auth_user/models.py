@@ -8,13 +8,6 @@ from phonenumber_field.validators import validate_international_phonenumber
 
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from random import randint
-
-
-def generate_verification_code():
-    """ Generates a 5 digit integer, verification code """
-    return randint(10000, 99999)
-
 
 def get_tokens_for_user(user):
     refresh = RefreshToken.for_user(user)
@@ -37,7 +30,6 @@ class UserManager(BaseUserManager):
         user = self.model(
             phone=phone,
             full_name=full_name,
-            verification_code=generate_verification_code(),
             **extra_fields
         )
 
@@ -63,8 +55,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     """ Custom user model """
     phone = PhoneNumberField(unique=True)
     full_name = models.CharField(max_length=255)
-    verification_code = models.CharField(default="",
-                                         max_length=5)
+    key = models.CharField(max_length=255, unique=True, blank=True)
 
     is_verified = models.BooleanField(default=False)
     is_staff = models.BooleanField(default=False)
