@@ -35,9 +35,8 @@ if ALLOWED_HOSTS_ENV:
 # Application definition
 
 INSTALLED_APPS = [
-    "store",
-    "product",
     "core",
+    "store",
     "otp_auth_user",
     'django.contrib.admin',
     'django.contrib.auth',

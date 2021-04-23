@@ -1,25 +1,55 @@
-from os import stat
 from rest_framework.response import Response
-from rest_framework.generics import CreateAPIView, RetrieveUpdateDestroyAPIView
-from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
-from rest_framework.viewsets import ModelViewSet
+from rest_framework.generics import CreateAPIView, RetrieveUpdateDestroyAPIView, ListCreateAPIView
+from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
 
 from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
 
-from .serializers import SigninUserSerializer, UserSerializer, RequestVCodeSerializer, VerifyNewPhoneNumberSerializer
-from .models import get_tokens_for_user, generate_key, generate_totp_for_user
+from .serializers import SigninUserSerializer, UserSerializer, RequestVCodeSerializer, VerificationCodeSerializer
+from core.helpers import get_tokens_for_user, VerifyInstancePhoneNumber
+
 
 from rest_framework_simplejwt.authentication import JWTAuthentication
+
+
+class CreateAndSigninUser(ListCreateAPIView):
+    """ This is just for development ,
+        creates a user + a token
+    """
+    serializer_class = UserSerializer
+    queryset = get_user_model().objects.all()
+
+    def create(self, request, *args, **kwargs):
+        try:
+            user = get_user_model().objects.get(phone=request.data["phone"])
+            serializer = self.get_serializer(user)
+            token = get_tokens_for_user(user)
+            data = {
+                "user": serializer.data,
+                "token": token
+            }
+            return Response(data)
+        except get_user_model().DoesNotExist:
+            serializer = self.get_serializer(data=request.data)
+
+            if serializer.is_valid():
+                serializer.save()
+                print(serializer.data)
+                user = get_object_or_404(
+                    get_user_model(), pk=serializer.data["id"])
+                token = get_tokens_for_user(user)
+                data = {
+                    "user": serializer.data,
+                    "token": token
+                }
+                return Response(data)
+            return Response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 class SignupUserView(CreateAPIView):
     """ Signup/create a new user in system """
     serializer_class = UserSerializer
-
-    def perform_create(self, serializer):
-        """ sends a verification code after user created """
-        user = serializer.save()
 
 
 class RequestVCodeView(CreateAPIView):
@@ -33,12 +63,9 @@ class RequestVCodeView(CreateAPIView):
         if not phone:
             raise ValueError("A phone number must be provided")
         user = get_object_or_404(get_user_model(), phone=phone)
-        user.base32_key = generate_key()
-        user.save()
 
-        otp_vcode = generate_totp_for_user(user)
-        print(f"{user.phone}: {otp_vcode.now()}")
-        user.save()
+        verify_phone = VerifyInstancePhoneNumber(get_user_model(), user)
+        verify_phone.request_verification()
 
         return Response({"msg": "verification code is sent."})
 
@@ -52,14 +79,11 @@ class ObtainToken(CreateAPIView):
         vcode = request.data["verification_code"]
 
         user = get_object_or_404(get_user_model(), phone=phone)
+        verify_phone = VerifyInstancePhoneNumber(get_user_model(), user)
 
-        totp = generate_totp_for_user(user)
-
-        if totp.verify(vcode):
+        if verify_phone.submit_verification(verification_code=vcode):
             token = get_tokens_for_user(user)
 
-            user.is_verified = True
-            user.save()
             data = {
                 "token": token
             }
@@ -82,12 +106,9 @@ class UserProfileView(RetrieveUpdateDestroyAPIView):
         data = request.data
         if "phone" in data:
             if data["phone"] != user.phone:
-                user.is_verified = False
-                user.base32_key = generate_key()
-                user.save()
-                otp_vcode = generate_totp_for_user(user)
-                print(f"{user.phone}: {otp_vcode.now()}")
-
+                verify_phone = VerifyInstancePhoneNumber(
+                    get_user_model(), user)
+                verify_phone.request_verification()
             else:
                 pass
         return super().partial_update(request, *args, **kwargs)
@@ -100,7 +121,7 @@ class VerifyNewPhoneNumberView(CreateAPIView):
     """
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
-    serializer_class = VerifyNewPhoneNumberSerializer
+    serializer_class = VerificationCodeSerializer
     # 63498
 
     def create(self, request):
@@ -111,14 +132,12 @@ class VerifyNewPhoneNumberView(CreateAPIView):
         user = request.user
         vcode = request.data["verification_code"]
 
-        totp = generate_totp_for_user(user)
         if not vcode:
             return Response({"msg": "Verification code is not provided."}, status=status.HTTP_400_BAD_REQUEST)
-        
-        if totp.verify(vcode):
-            user.verification_code = ""
-            user.is_verified = True
-            user.save()
+
+        verify_phone = VerifyInstancePhoneNumber(get_user_model(), user)
+
+        if verify_phone.submit_verification(verification_code=vcode):
             return Response({"Phone number is verified."})
 
         return Response({"msg": "Verification code is invalid or expired."}, status=status.HTTP_400_BAD_REQUEST)

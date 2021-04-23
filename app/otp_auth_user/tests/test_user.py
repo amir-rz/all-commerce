@@ -5,9 +5,7 @@ from django.urls import reverse
 from rest_framework.test import APIClient
 from rest_framework import status
 
-from ..models import generate_totp_for_user
-
-import pyotp
+from core.helpers import generate_totp_for_instance
 
 
 REQUEST_VCODE_URL = reverse("user:request-vcode")
@@ -69,7 +67,7 @@ class PublicUserApiTests(TestCase):
     def test_signin_a_user(self):
         """ Test signin a user with recived verification code through sms """
         user = sample_user()
-        vcode = generate_totp_for_user(user).now()
+        vcode = generate_totp_for_instance(user).now()
 
         payload = {
             "phone": user.phone,
@@ -84,7 +82,7 @@ class PublicUserApiTests(TestCase):
     def test_signin_user_invalid_vcode(self):
         """ Test sign in a user with invalid verifciation code """
         user = sample_user()
-        vcode = generate_totp_for_user(user).now()
+        vcode = generate_totp_for_instance(user).now()
 
         payload = {
             "phone": user.phone,
@@ -128,15 +126,15 @@ class PrivateUserApiTests(TestCase):
     def test_user_update_same_phone_number(self):
         """ 
         Test if user updated phone number 
-        but with the same value, the nothing happens/is_verified=True
+        but with the same value, the nothing happens/phone_is_verified=True
         """
-        self.user.is_verified = True
+        self.user.phone_is_verified = True
         payload = {"phone": self.user.phone}
 
         res = self.client.patch(PROFILE_URL, payload)
 
         self.user.refresh_from_db()
-        self.assertTrue(self.user.is_verified)
+        self.assertTrue(self.user.phone_is_verified)
 
     def test_user_update_and_verify_new_phone_number(self):
         """ Test user needs to verify the new phone number 
@@ -151,9 +149,9 @@ class PrivateUserApiTests(TestCase):
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertIn("phone", res.data)
         self.assertEqual(res.data["phone"], payload["phone"])
-        self.assertFalse(self.user.is_verified)
+        self.assertFalse(self.user.phone_is_verified)
         
-        vcode = generate_totp_for_user(self.user).now()
+        vcode = generate_totp_for_instance(self.user).now()
         payload = {
             "verification_code": vcode
         }
@@ -162,11 +160,11 @@ class PrivateUserApiTests(TestCase):
         self.user.refresh_from_db()
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
-        self.assertTrue(self.user.is_verified)
+        self.assertTrue(self.user.phone_is_verified)
 
     def test_refresh_token(self):
         """ Test recieve a new access and refresh for current refresh token  """
-        vcode = generate_totp_for_user(self.user).now()
+        vcode = generate_totp_for_instance(self.user).now()
      
         payload = {
             "phone": self.user.phone,

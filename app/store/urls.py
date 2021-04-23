@@ -5,10 +5,10 @@ from . import views
 
 router = DefaultRouter()
 
-router.register("store", views.StoreViewSet)
+router.register("", views.StoreViewSet)
 
 
 app_name = "store"
 urlpatterns = [
-    path("", include(router.urls))
+    path("", include(router.urls)),
 ]

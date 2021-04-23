@@ -4,14 +4,13 @@ from django.contrib.auth import get_user_model
 
 from phonenumber_field.serializerfields import PhoneNumberField
 
-
 class UserSerializer(serializers.ModelSerializer):
 
 
     class Meta:
         model = get_user_model()
-        fields = ["id", "phone", "full_name", "is_verified"]
-        read_only_fields = ["id", "is_verified"]
+        fields = ["id", "phone", "full_name", "phone_is_verified"]
+        read_only_fields = ["id", "phone_is_verified"]
 
     def create(self, validated_data):
         """ Create and return a new user """
@@ -42,5 +41,5 @@ class SigninUserSerializer(serializers.Serializer):
     verification_code = serializers.CharField()
 
 
-class VerifyNewPhoneNumberSerializer(serializers.Serializer):
+class VerificationCodeSerializer(serializers.Serializer):
     verification_code = serializers.CharField(min_length=5, max_length=5)

@@ -1,10 +1,8 @@
 from django.core.exceptions import ValidationError
-from django.test import TestCase, client
+from django.test import TestCase
 from django.contrib.auth import get_user_model
-from django.urls import reverse
 
-from rest_framework.test import APIClient
-from rest_framework import status
+
 
 
 def sample_user(phone="+989123456789", full_name="testname"):
