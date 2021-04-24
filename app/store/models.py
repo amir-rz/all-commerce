@@ -40,7 +40,7 @@ class Category(models.Model):
     website_category = models.ForeignKey(
         "core.WebsiteCategory", on_delete=models.CASCADE)
     parent_category = models.ForeignKey(
-        "self", on_delete=models.CASCADE, null=True)
+        "self", on_delete=models.CASCADE, null=True, blank=True)
 
     def __str__(self):
         return self.name
@@ -72,8 +72,7 @@ class Product(models.Model):
     sale_price = models.IntegerField(default=0)
     discount = models.IntegerField(default=0)
     stock = models.IntegerField(default=0)
-    weight_in_grams = models.DecimalField(
-        max_digits=5, decimal_places=1, null=True)
+    weight_in_grams = models.IntegerField(default=0, blank=True)
     in_bulk = models.BooleanField(default=False)
     brand = models.ForeignKey("Brand", on_delete=models.SET_NULL, null=True)
     category = models.ForeignKey(
