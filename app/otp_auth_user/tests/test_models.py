@@ -1,8 +1,6 @@
+from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.test import TestCase
-from django.contrib.auth import get_user_model
-
-
 
 
 def sample_user(phone="+989123456789", full_name="testname"):

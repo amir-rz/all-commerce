@@ -1,16 +1,15 @@
-from rest_framework.response import Response
-from rest_framework.generics import CreateAPIView, RetrieveUpdateDestroyAPIView, ListCreateAPIView
-from rest_framework.permissions import IsAuthenticated
-from rest_framework import status
-
+from core.helpers import VerifyInstancePhoneNumber, get_tokens_for_user
 from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
-
-from .serializers import SigninUserSerializer, UserSerializer, RequestVCodeSerializer, VerificationCodeSerializer
-from core.helpers import get_tokens_for_user, VerifyInstancePhoneNumber
-
-
+from rest_framework import status
+from rest_framework.generics import (CreateAPIView, ListCreateAPIView,
+                                     RetrieveUpdateDestroyAPIView)
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
 from rest_framework_simplejwt.authentication import JWTAuthentication
+
+from .serializers import (RequestVCodeSerializer, SigninUserSerializer,
+                          UserSerializer, VerificationCodeSerializer)
 
 
 class CreateAndSigninUser(ListCreateAPIView):

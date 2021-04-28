@@ -1,13 +1,12 @@
+import pyotp
+from core.helpers import generate_key
 from django.contrib.auth import get_user_model
-from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin, AnonymousUser
-
+from django.contrib.auth.models import (AbstractBaseUser, AnonymousUser,
+                                        BaseUserManager, PermissionsMixin)
 from django.db import models
-
 from phonenumber_field.modelfields import PhoneNumberField
 from phonenumber_field.validators import validate_international_phonenumber
-import pyotp
 
-from core.helpers import generate_key
 
 class UserManager(BaseUserManager):
 
