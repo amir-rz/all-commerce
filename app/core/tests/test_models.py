@@ -5,10 +5,10 @@ from .. import models
 
 class ModelsTests(TestCase):
 
-    def test_website_category_str_repr(self):
-        """ Test website category string representation """
-        website_category = models.WebsiteCategory.objects.create(
+    def test_store_category_str_repr(self):
+        """ Test store category string representation """
+        store_category = models.StoreCategory.objects.create(
             name="Food"
         )
 
-        self.assertEqual(str(website_category), website_category.name)
+        self.assertEqual(str(store_category), store_category.name)

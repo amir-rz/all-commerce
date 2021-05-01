@@ -4,9 +4,7 @@ from unittest.mock import patch
 
 from core import models as core_models
 from django.contrib.auth import get_user_model
-from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
-from PIL import Image
 from rest_framework.test import APIClient
 
 from .. import models
@@ -24,7 +22,14 @@ def sample_city(name="london"):
     return models.City.objects.create(name=name)
 
 
-def sample_store(user, city, name="Nike", is_verified=False):
+def sample_store_category(name="Supermarket"):
+    """ Creates and returns a store category instance """
+    return core_models.StoreCategory.objects.create(
+        name=name
+    )
+
+
+def sample_store(user, store_category, city, name="Nike", is_verified=False):
     """ Create and return an store instance"""
     return models.Store.objects.create(
         name=name,
@@ -34,34 +39,28 @@ def sample_store(user, city, name="Nike", is_verified=False):
         lat=22.2343,
         long=-13.123,
         city=city,
-        is_verified=is_verified
+        is_verified=is_verified,
+        store_category=store_category
     )
 
 
-def sample_website_category(name="Clothing"):
-    """ Creates and returns a website category instance """
-    return core_models.WebsiteCategory.objects.create(
-        name=name
-    )
-
-
-def sample_category(website_category, name="Shoes", owner=None, is_verified=False):
+def sample_category(store_category, name="Shoes", owner=None, is_verified=False):
     """ Creates and returns a category instance """
 
     return models.Category.objects.create(
         name=name,
-        website_category=website_category,
+        store_category=store_category,
         owner=owner,
         is_verified=is_verified
     )
 
 
-def sample_sub_category(parent_category, website_category, name="Sandal", owner=None, is_verified=False):
+def sample_sub_category(parent_category, store_category, name="Sandal", owner=None, is_verified=False):
     """ Creates and returns a sub category instance """
 
     return models.Category.objects.create(
         name=name,
-        website_category=website_category,
+        store_category=store_category,
         parent_category=parent_category,
         owner=owner,
         is_verified=is_verified
@@ -78,16 +77,18 @@ def sample_brand(category=None, name_fa="نایک", name_en="", is_verified=Fals
     )
 
 
-def sample_product(brand,
-                   category,
-                   store,
-                   name="Nike Adapt BB",
-                   purchased_price=500000,
-                   sale_price=600000,
-                   discount=9,
-                   stock=50,
-                   is_verified=False
-                   ):
+
+def sample_product(
+    category,
+    store,
+    brand=None,
+    name="Nike Adapt BB",
+    purchased_price=500000,
+    sale_price=600000,
+    discount=9,
+    stock=50,
+    is_verified=False
+):
     """ Creates and returns a product instance """
     return models.Product.objects.create(
         name=name,
@@ -99,21 +100,21 @@ def sample_product(brand,
         category=category,
         store=store,
         is_verified=is_verified
-
     )
 
 
-def sample_supermarket_product(brand,
-                               category,
-                               store,
-                               name="Nike Adapt BB",
-                               purchased_price=500000,
-                               sale_price=600000,
-                               discount=9,
-                               stock=50,
-                               weight_in_grams=0,
-                               in_bulk=False,
-                               is_verified=False):
+def sample_supermarket_product(
+        category,
+        store,
+        brand=None,
+        name="Nike Adapt BB",
+        purchased_price=500000,
+        sale_price=600000,
+        discount=9,
+        stock=50,
+        weight_in_grams=0,
+        in_bulk=False,
+        is_verified=False):
     """ Creates and returns a product instance """
     return models.SupermarketProduct.objects.create(
         name=name,
@@ -136,15 +137,16 @@ class ModelsTests(TestCase):
         self.user = sample_user()
         self.client.force_authenticate(user=self.user)
         self.city = sample_city()
-        self.store = sample_store(self.user, self.city)
-        self.website_category = sample_website_category()
-        self.category = sample_category(self.website_category)
+        self.store_category = sample_store_category()
+        self.store = sample_store(self.user, self.store_category, self.city)
+        self.category = sample_category(self.store_category)
         self.sub_category = sample_sub_category(
-            self.category, self.website_category)
+            self.category, self.store_category)
         self.brand = sample_brand(self.category)
-        self.product = sample_product(self.brand, self.category, self.store)
+        self.product = sample_product(
+            self.category, self.store, brand=self.brand)
         self.supermarket_product = sample_supermarket_product(
-            self.brand, self.category, self.store)
+            self.category, self.store, brand=self.brand)
 
     def test_store_str_repr(self):
         """ Test store string representation"""
@@ -164,7 +166,7 @@ class ModelsTests(TestCase):
     def test_sub_category_str_repr(self):
         """
         Test create sub category and string representation.
-        if "website_category" is not provided, then parent "website_category"
+        if "store_category" is not provided, then parent "store_category"
         """
 
         self.assertEqual(str(self.sub_category), self.sub_category.name)
@@ -194,3 +196,11 @@ class ModelsTests(TestCase):
 
         exp_path = f"uploads/product/{uuid}.jpg"
         self.assertEqual(file_path, exp_path)
+
+    def test_wishlist_str_repr(self):
+        """ Test wish list item string representation """
+
+        wishlistitem = models.WishListItem.objects.create(
+            product=self.product, user=self.user)
+
+        self.assertEqual(str(wishlistitem), wishlistitem.product.name)

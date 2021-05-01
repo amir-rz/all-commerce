@@ -19,7 +19,7 @@ class SubCategorySerializer(serializers.ModelSerializer):
         model = models.Category
         fields = "__all__"
         read_only_fields = ["id", "is_verified",
-                            "website_category", "parent_category", "owner"]
+                            "store_category", "parent_category", "owner"]
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -52,18 +52,9 @@ class ProductSerializer(serializers.ModelSerializer):
         max_digits=2, decimal_places=1, min_value=0, max_value=5, read_only=True)
     product_images = ProductImageSerializer(many=True, read_only=True)
 
-    def get_fields(self):
-        fields = super().get_fields()
-
-        authenticated_user = self.context['view'].request.user
-        fields["store"].queryset = models.Store.objects.filter(
-            owner=authenticated_user)
-
-        return fields
-
     class Meta:
         model = models.Product
-        fileds = "__all__"
+        fields = "__all__"
 
     # def create(self, validated_data):
     #     print("Validated data--", validated_data)
@@ -83,3 +74,11 @@ class SupermarketProductSerializer(ProductSerializer):
         model = models.SupermarketProduct
         fields = "__all__"
         read_only_fields = ["id", "is_verified", "product_score"]
+
+
+class WishlistItemSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = models.WishListItem
+        fields = "__all__"
+        read_only_fields = ["user","id"]
